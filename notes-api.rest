@@ -1,41 +1,95 @@
-### Create a new note
+# ================================
+# 👤 USERS
+# ================================
+
+### Create a new user
+POST http://localhost:3030/users
+Content-Type: application/json
+
+{
+  "name": "Alice",
+  "email": "alice@example.com"
+}
+
+### Create another user
+POST http://localhost:3030/users
+Content-Type: application/json
+
+{
+  "name": "Bob",
+  "email": "bob@example.com"
+}
+
+# ================================
+# 📝 NOTES
+# ================================
+
+### Create a new note for user 1 (Alice)
 POST http://localhost:3030/notes
 Content-Type: application/json
 
 {
-  "title": "Note with tags",
-  "content": "This note starts with tags and pin status.",
-  "tags": ["ideas", "2025"],
-  "is_pinned": false
+  "title": "First Note",
+  "content": "This is Alice's first note.",
+  "tags": ["personal", "draft"],
+  "is_pinned": true,
+  "user_id": 1
+}
+
+### Create a new note for user 2 (Bob)
+POST http://localhost:3030/notes
+Content-Type: application/json
+
+{
+  "title": "Bob's Note",
+  "content": "Bob's content goes here.",
+  "tags": ["work"],
+  "is_pinned": false,
+  "user_id": 2
 }
 
 ### Get all notes
 GET http://localhost:3030/notes
 
-### Get a specific note by ID (replace :id with a real one)
-GET http://localhost:3030/notes/3
+### Get a specific note by ID
+GET http://localhost:3030/notes/1
 
-### Update a note (replace :id with a real one)
-PUT http://localhost:3030/notes/3
+### Update a note
+PUT http://localhost:3030/notes/1
 Content-Type: application/json
 
 {
-  "title": "Updated Note",
-  "content": "Updated content",
+  "title": "First Note (Updated)",
+  "content": "This content has been updated.",
   "tags": ["updated", "note"],
-  "is_pinned": true
+  "is_pinned": false,
+  "user_id": 1
 }
 
-### 🔄 Add or update tags on a note
-PATCH http://localhost:3030/notes/3/tags
+### Delete a note
+DELETE http://localhost:3030/notes/2
+
+# ================================
+# 🏷️ TAGS & PINNING
+# ================================
+
+### Update tags on a note
+PATCH http://localhost:3030/notes/1/tags
 Content-Type: application/json
 
 {
-  "tags": ["new", "tag", "collection"]
+  "tags": ["important", "revised"]
 }
 
-### 🔁 Toggle is_pinned status on a note
-PATCH http://localhost:3030/notes/3/pin
+### Toggle is_pinned on a note
+PATCH http://localhost:3030/notes/1/pin
 
-### Delete a note (replace :id with a real one)
-DELETE http://localhost:3030/notes/1
+# ================================
+# 👥 USERS + NOTES
+# ================================
+
+### Get all notes by user 1 (Alice)
+GET http://localhost:3030/users/1/notes
+
+### Get all notes with author info
+GET http://localhost:3030/notes-with-authors

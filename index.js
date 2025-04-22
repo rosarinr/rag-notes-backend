@@ -21,21 +21,49 @@ const db = createClient({
          tags TEXT, -- JSON-encoded array of strings
     is_pinned INTEGER DEFAULT 0, -- 0 = false, 1 = true
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        user_id INTEGER
+    );
+  `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL
     );
   `);
 })();
 
+// CREATE a user
+app.post("/users", async (req, res) => {
+  const { name, email } = req.body;
+  if (!name || !email)
+    return res.status(400).send("Name and email are required");
+
+  const result = await db.execute({
+    sql: "INSERT INTO users (name, email) VALUES (?, ?)",
+    args: [name, email],
+  });
+
+  res.status(201).json({
+    id: Number(result.lastInsertRowid),
+    name,
+    email,
+  });
+});
+
 // CREATE a note
 app.post("/notes", async (req, res) => {
-  const { title, content, tags = [], is_pinned = false } = req.body;
+  const { title, content, tags = [], is_pinned = false, user_id } = req.body;
+
+  if (!user_id) return res.status(400).send("User ID is required");
 
   const result = await db.execute({
     sql: `
-        INSERT INTO notes (title, content, tags, is_pinned)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO notes (title, content, tags, is_pinned, user_id)
+        VALUES (?, ?, ?, ?, ?)
       `,
-    args: [title, content, JSON.stringify(tags), is_pinned ? 1 : 0],
+    args: [title, content, JSON.stringify(tags), is_pinned ? 1 : 0, user_id],
   });
 
   res.status(201).json({
@@ -44,6 +72,7 @@ app.post("/notes", async (req, res) => {
     content,
     tags,
     is_pinned,
+    user_id,
   });
 });
 
@@ -76,6 +105,50 @@ app.get("/notes/:id", async (req, res) => {
     tags: JSON.parse(note.tags || "[]"),
     is_pinned: Boolean(note.is_pinned),
   });
+});
+
+// READ all notes with Author info
+app.get("/notes-with-authors", async (_req, res) => {
+  const result = await db.execute(`
+      SELECT notes.*, users.name as author_name, users.email as author_email
+      FROM notes
+      INNER JOIN users ON notes.user_id = users.id
+      ORDER BY notes.created_at DESC
+    `);
+
+  const notes = result.rows.map((note) => ({
+    ...note,
+    tags: JSON.parse(note.tags || "[]"),
+    is_pinned: Boolean(note.is_pinned),
+    author: {
+      name: note.author_name,
+      email: note.author_email,
+    },
+  }));
+
+  res.json(notes);
+});
+
+// GET all notes by user
+app.get("/users/:id/notes", async (req, res) => {
+  const userId = req.params.id;
+
+  const result = await db.execute({
+    sql: `
+        SELECT * FROM notes
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+      `,
+    args: [userId],
+  });
+
+  const notes = result.rows.map((note) => ({
+    ...note,
+    tags: JSON.parse(note.tags || "[]"),
+    is_pinned: Boolean(note.is_pinned),
+  }));
+
+  res.json(notes);
 });
 
 // UPDATE a note

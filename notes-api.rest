@@ -1,0 +1,41 @@
+### Create a new note
+POST http://localhost:3030/notes
+Content-Type: application/json
+
+{
+  "title": "Note with tags",
+  "content": "This note starts with tags and pin status.",
+  "tags": ["ideas", "2025"],
+  "is_pinned": false
+}
+
+### Get all notes
+GET http://localhost:3030/notes
+
+### Get a specific note by ID (replace :id with a real one)
+GET http://localhost:3030/notes/3
+
+### Update a note (replace :id with a real one)
+PUT http://localhost:3030/notes/3
+Content-Type: application/json
+
+{
+  "title": "Updated Note",
+  "content": "Updated content",
+  "tags": ["updated", "note"],
+  "is_pinned": true
+}
+
+### 🔄 Add or update tags on a note
+PATCH http://localhost:3030/notes/3/tags
+Content-Type: application/json
+
+{
+  "tags": ["new", "tag", "collection"]
+}
+
+### 🔁 Toggle is_pinned status on a note
+PATCH http://localhost:3030/notes/3/pin
+
+### Delete a note (replace :id with a real one)
+DELETE http://localhost:3030/notes/1

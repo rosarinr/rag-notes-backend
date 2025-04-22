@@ -1,4 +1,25 @@
-## 🔧 1. **Creating the Notes Table**
+## 🗄️ **1. Table Initialization – SQL Overview**
+
+### 🔸 Users Table
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL
+);
+```
+
+**Explanation:**
+
+- `CREATE TABLE IF NOT EXISTS`: Creates a new table, but only if it doesn’t already exist (prevents errors).
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`: Each user gets a unique ID that automatically increases.
+- `name TEXT NOT NULL`: Name must be provided.
+- `email TEXT UNIQUE NOT NULL`: Email must be unique and cannot be empty.
+
+---
+
+### 🔸 Notes Table
 
 ```sql
 CREATE TABLE IF NOT EXISTS notes (
@@ -8,140 +29,162 @@ CREATE TABLE IF NOT EXISTS notes (
   tags TEXT,
   is_pinned INTEGER DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  user_id INTEGER
 );
 ```
 
-### Explanation:
+**Explanation:**
 
-- `CREATE TABLE IF NOT EXISTS`: This creates the table **only if it doesn’t already exist**.
-- `id INTEGER PRIMARY KEY AUTOINCREMENT`: A unique ID is automatically assigned to each note. It counts up automatically (1, 2, 3...).
-- `title TEXT NOT NULL`: The title must be text, and **cannot be empty** (`NOT NULL`).
-- `content TEXT NOT NULL`: Same as title — must contain something.
-- `tags TEXT`: This will store an **array of tags**, but stored as a **JSON string** (like `["personal","work"]`).
-- `is_pinned INTEGER DEFAULT 0`: This stores either `0` (false) or `1` (true). The default is **not pinned**.
-- `created_at DATETIME DEFAULT CURRENT_TIMESTAMP`: Automatically sets the **current time** when the note is created.
-- `updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`: Same as above — and we update this manually whenever a note is changed.
+- `tags TEXT`: Stores an array of tags in JSON string format.
+- `is_pinned INTEGER DEFAULT 0`: Treated as a boolean. `0` means false, `1` means true.
+- `created_at` / `updated_at`: Auto-filled with the current time.
+- `user_id INTEGER`: Connects this note to a user (foreign key-style relationship).
 
 ---
 
-## 📝 2. Inserting a Note (`POST /notes`)
+## 🔧 2. CRUD Routes & Their SQL Logic
+
+---
+
+### ✅ Create a User
 
 ```sql
-INSERT INTO notes (title, content, tags, is_pinned)
-VALUES (?, ?, ?, ?)
+INSERT INTO users (name, email) VALUES (?, ?);
 ```
 
-### Explanation:
-
-- `INSERT INTO notes (...)`: Adds a **new row** to the `notes` table.
-- `VALUES (?, ?, ?, ?)`: These `?`s are placeholders for:
-  - `title` (text)
-  - `content` (text)
-  - `tags` (converted to a string using `JSON.stringify(tags)`)
-  - `is_pinned` (converted to `0` or `1`)
-
-This creates a full note in the database.
+- Adds a new user to the database.
+- `?` placeholders are replaced by actual values (`name`, `email`).
 
 ---
 
-## 📖 3. Retrieving Notes (`GET /notes`, `GET /notes/:id`)
+### ✅ Create a Note
+
+```sql
+INSERT INTO notes (title, content, tags, is_pinned, user_id)
+VALUES (?, ?, ?, ?, ?);
+```
+
+- Adds a new note to the `notes` table.
+- Tags are converted to a JSON string before saving.
+- `is_pinned` is stored as `0` or `1`.
+
+---
+
+### ✅ Get All Notes
+
+```sql
+SELECT * FROM notes;
+```
+
+- Retrieves all notes from the database.
+- You then parse the `tags` field back into an array using `JSON.parse()` and convert `is_pinned` to a boolean.
+
+---
+
+### ✅ Get a Note by ID
+
+```sql
+SELECT * FROM notes WHERE id = ?;
+```
+
+- Returns one note that matches the provided `id`.
+
+---
+
+### ✅ Get Notes with Author Info
+
+```sql
+SELECT notes.*, users.name as author_name, users.email as author_email
+FROM notes
+INNER JOIN users ON notes.user_id = users.id
+ORDER BY notes.created_at DESC;
+```
+
+- This is a **JOIN**: it combines data from both `notes` and `users` where `user_id` matches `users.id`.
+- Adds `author_name` and `author_email` fields to each note result.
+
+---
+
+### ✅ Get All Notes by One User
 
 ```sql
 SELECT * FROM notes
+WHERE user_id = ?
+ORDER BY created_at DESC;
 ```
 
-or:
-
-```sql
-SELECT * FROM notes WHERE id = ?
-```
-
-### Explanation:
-
-- `SELECT *`: Fetches **all columns**.
-- `WHERE id = ?`: Filters by a specific note’s ID.
-
-Then you:
-
-- Convert `tags` from string to array with `JSON.parse(...)`
-- Convert `is_pinned` from `0/1` to `true/false`
+- Fetches notes written by a specific user using their `user_id`.
 
 ---
 
-## ✏️ 4. Updating a Note (`PUT /notes/:id`)
+### ✏️ Update a Note
 
 ```sql
 UPDATE notes
 SET title = ?, content = ?, tags = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+WHERE id = ?;
 ```
 
-### Explanation:
-
-- `UPDATE notes`: Change an existing row.
-- `SET ...`: Set new values for each field.
-- `updated_at = CURRENT_TIMESTAMP`: Updates the modified date.
-- `WHERE id = ?`: Only update the note with this ID.
+- Updates all main fields of a note.
+- Also updates the `updated_at` timestamp automatically.
 
 ---
 
-## 🏷️ 5. Updating Just Tags (`PATCH /notes/:id/tags`)
+### 🏷️ Update Tags Only
 
 ```sql
 UPDATE notes
 SET tags = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+WHERE id = ?;
 ```
 
-### Explanation:
-
-You’re only updating the `tags` field here, and refreshing the `updated_at` timestamp.
+- Just updates the `tags` field (useful for patching).
 
 ---
 
-## 📌 6. Toggling Pinned Status (`PATCH /notes/:id/pin`)
+### 📌 Toggle Pin
 
 ```sql
-SELECT is_pinned FROM notes WHERE id = ?
+SELECT is_pinned FROM notes WHERE id = ?;
 ```
 
-→ read current value, then:
+- First, check the current pin status.
+
+Then:
 
 ```sql
 UPDATE notes
 SET is_pinned = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+WHERE id = ?;
 ```
 
-### Explanation:
-
-- You **read the current pin status**, reverse it (`0` → `1` or `1` → `0`), then save the new status.
+- Flip the value of `is_pinned`.
 
 ---
 
-## 🗑️ 7. Deleting a Note (`DELETE /notes/:id`)
+### ❌ Delete a Note
 
 ```sql
-DELETE FROM notes WHERE id = ?
+DELETE FROM notes WHERE id = ?;
 ```
 
-### Explanation:
-
-- `DELETE FROM notes`: Completely removes a row.
-- `WHERE id = ?`: Only delete the note with the given ID.
+- Removes the note with the specified ID from the database.
 
 ---
 
-## ✅ Summary for Beginners:
+## 🧠 Concepts You're Applying (for Beginners)
 
-| SQL Keyword    | What it does                           |
-| -------------- | -------------------------------------- |
-| `CREATE TABLE` | Makes a new table (like a spreadsheet) |
-| `INSERT INTO`  | Adds a new row (a note)                |
-| `SELECT`       | Reads notes from the table             |
-| `UPDATE`       | Edits an existing note                 |
-| `DELETE`       | Removes a note completely              |
-| `WHERE`        | Filters by something (like ID)         |
+| SQL Feature     | Where You Used It               | What It Does                                       |
+| --------------- | ------------------------------- | -------------------------------------------------- |
+| `CREATE TABLE`  | Setup code                      | Defines tables and columns                         |
+| `INSERT INTO`   | `POST /users`, `POST /notes`    | Adds new rows (users, notes)                       |
+| `SELECT`        | `GET` routes                    | Fetches rows (all notes, notes with authors, etc.) |
+| `INNER JOIN`    | `GET /notes-with-authors`       | Combines data from 2 tables (notes + users)        |
+| `UPDATE`        | `PUT`, `PATCH` routes           | Edits specific fields in existing rows             |
+| `DELETE`        | `DELETE /notes/:id`             | Removes data                                       |
+| `WHERE`         | Many routes                     | Filters rows based on a condition (e.g. ID match)  |
+| `DEFAULT`       | `is_pinned`, `created_at`, etc. | Automatically assigns values if not provided       |
+| `AUTOINCREMENT` | `id` fields                     | Automatically increases ID value for new entries   |
 
 ---

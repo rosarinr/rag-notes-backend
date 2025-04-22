@@ -3,7 +3,9 @@ import dotenv from "dotenv";
 import { createClient } from "@libsql/client";
 
 dotenv.config();
+
 const app = express();
+
 app.use(express.json());
 
 const db = createClient({
@@ -34,7 +36,56 @@ const db = createClient({
   `);
 })();
 
-// CREATE a user
+app.get("/", (req, res) => {
+  res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Notes API</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f7f9fc;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+          }
+          h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+          }
+          p {
+            font-size: 1.2rem;
+            margin-top: 1rem;
+          }
+          code {
+            background: #eee;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.95rem;
+          }
+          .container {
+            max-width: 600px;
+            margin: auto;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>📒 Welcome to the Notes API</h1>
+          <p>This is a simple REST API built with <strong>Express</strong> and <strong>LibSQL</strong>.</p>
+          <p>Try creating a note via <code>POST /notes</code> or explore routes like <code>/users</code> and <code>/notes-with-authors</code>.</p>
+          <p>Use a REST client like <em>VSCode REST Client</em> or <em>Postman</em> to interact.</p>
+          <p>✨ Happy coding!</p>
+        </div>
+      </body>
+      </html>
+    `);
+});
+
+// CREATE a user (Do this first! with initialize create user table)
 app.post("/users", async (req, res) => {
   const { name, email } = req.body;
   if (!name || !email)

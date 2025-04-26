@@ -188,3 +188,10 @@ DELETE FROM notes WHERE id = ?;
 | `AUTOINCREMENT` | `id` fields                     | Automatically increases ID value for new entries   |
 
 ---
+
+api/
+├── v1/
+│ ├── routes.js
+│ └── users.js
+│ └── notes.js
+└── server.js

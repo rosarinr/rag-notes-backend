@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import { createClient } from "@libsql/client";
+import apiRoutes from "./api/v1/routes.js";
 
 dotenv.config();
 
@@ -13,8 +15,24 @@ const db = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-// Initialize the notes table
 (async () => {
+  // Connect to MongoDB via Mongoose
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("Connected to Mongo database ✅");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  }
+  // Ping Turso
+  try {
+    await db.execute("SELECT 1");
+    console.log("Checked successful communication with Turso database ✅");
+  } catch (err) {
+    console.error("❌ Failed to connect to Turso:", err);
+    process.exit(1);
+  }
+  // Initialize Turso tables
   await db.execute(`
     CREATE TABLE IF NOT EXISTS notes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,195 +103,7 @@ app.get("/", (req, res) => {
     `);
 });
 
-// CREATE a user (Do this first! with initialize create user table)
-app.post("/users", async (req, res) => {
-  const { name, email } = req.body;
-  if (!name || !email)
-    return res.status(400).send("Name and email are required");
-
-  const result = await db.execute({
-    sql: "INSERT INTO users (name, email) VALUES (?, ?)",
-    args: [name, email],
-  });
-
-  res.status(201).json({
-    id: Number(result.lastInsertRowid),
-    name,
-    email,
-  });
-});
-
-// CREATE a note
-app.post("/notes", async (req, res) => {
-  const { title, content, tags = [], is_pinned = false, user_id } = req.body;
-
-  if (!user_id) return res.status(400).send("User ID is required");
-
-  const result = await db.execute({
-    sql: `
-        INSERT INTO notes (title, content, tags, is_pinned, user_id)
-        VALUES (?, ?, ?, ?, ?)
-      `,
-    args: [title, content, JSON.stringify(tags), is_pinned ? 1 : 0, user_id],
-  });
-
-  res.status(201).json({
-    id: Number(result.lastInsertRowid),
-    title,
-    content,
-    tags,
-    is_pinned,
-    user_id,
-  });
-});
-
-// READ all notes
-app.get("/notes", async (_req, res) => {
-  const result = await db.execute("SELECT * FROM notes");
-  const notes = result.rows.map((note) => ({
-    ...note,
-    tags: JSON.parse(note.tags || "[]"),
-    is_pinned: Boolean(note.is_pinned),
-  }));
-  res.json(notes);
-});
-
-// READ a specific note
-app.get("/notes/:id", async (req, res) => {
-  const result = await db.execute({
-    sql: "SELECT * FROM notes WHERE id = ?",
-    args: [req.params.id],
-  });
-
-  if (result.rows.length === 0) {
-    return res.status(404).send("Note not found");
-  }
-
-  const note = result.rows[0];
-
-  res.json({
-    ...note,
-    tags: JSON.parse(note.tags || "[]"),
-    is_pinned: Boolean(note.is_pinned),
-  });
-});
-
-// READ all notes with Author info
-app.get("/notes-with-authors", async (_req, res) => {
-  const result = await db.execute(`
-      SELECT notes.*, users.name as author_name, users.email as author_email
-      FROM notes
-      INNER JOIN users ON notes.user_id = users.id
-      ORDER BY notes.created_at DESC
-    `);
-
-  const notes = result.rows.map((note) => ({
-    ...note,
-    tags: JSON.parse(note.tags || "[]"),
-    is_pinned: Boolean(note.is_pinned),
-    author: {
-      name: note.author_name,
-      email: note.author_email,
-    },
-  }));
-
-  res.json(notes);
-});
-
-// GET all notes by user
-app.get("/users/:id/notes", async (req, res) => {
-  const userId = req.params.id;
-
-  const result = await db.execute({
-    sql: `
-        SELECT * FROM notes
-        WHERE user_id = ?
-        ORDER BY created_at DESC
-      `,
-    args: [userId],
-  });
-
-  const notes = result.rows.map((note) => ({
-    ...note,
-    tags: JSON.parse(note.tags || "[]"),
-    is_pinned: Boolean(note.is_pinned),
-  }));
-
-  res.json(notes);
-});
-
-// UPDATE a note
-app.put("/notes/:id", async (req, res) => {
-  const { title, content, tags = [], is_pinned = false } = req.body;
-
-  await db.execute({
-    sql: `
-        UPDATE notes
-        SET title = ?, content = ?, tags = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `,
-    args: [
-      title,
-      content,
-      JSON.stringify(tags),
-      is_pinned ? 1 : 0,
-      req.params.id,
-    ],
-  });
-
-  res.send("Note updated");
-});
-
-// PATCH: update tags
-app.patch("/notes/:id/tags", async (req, res) => {
-  const { tags } = req.body;
-  if (!Array.isArray(tags))
-    return res.status(400).send("Tags must be an array");
-
-  await db.execute({
-    sql: `
-        UPDATE notes
-        SET tags = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `,
-    args: [JSON.stringify(tags), req.params.id],
-  });
-
-  res.send("Tags updated");
-});
-
-// PATCH: toggle is_pinned
-app.patch("/notes/:id/pin", async (req, res) => {
-  const result = await db.execute({
-    sql: "SELECT is_pinned FROM notes WHERE id = ?",
-    args: [req.params.id],
-  });
-
-  if (result.rows.length === 0) return res.status(404).send("Note not found");
-
-  const current = result.rows[0].is_pinned;
-  const toggled = current ? 0 : 1;
-
-  await db.execute({
-    sql: `
-        UPDATE notes
-        SET is_pinned = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `,
-    args: [toggled, req.params.id],
-  });
-
-  res.send(`Note pin status set to ${!!toggled}`);
-});
-
-// DELETE a note
-app.delete("/notes/:id", async (req, res) => {
-  await db.execute({
-    sql: "DELETE FROM notes WHERE id = ?",
-    args: [req.params.id],
-  });
-  res.send("Note deleted");
-});
+app.use("/", apiRoutes(db));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>

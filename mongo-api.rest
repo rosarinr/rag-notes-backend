@@ -1,0 +1,61 @@
+### Get all users
+GET http://localhost:3030/mongo/users
+
+### Get all notes
+GET http://localhost:3030/mongo/notes
+
+### Create a new user (basic)
+POST http://localhost:3030/mongo/users
+Content-Type: application/json
+
+{
+  "name": "Betty",
+  "email": "betty@example.com"
+}
+
+### Create a new note (basic)
+POST http://localhost:3030/mongo/notes
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDA3MTcsImV4cCI6MTc0NTU0NDMxN30.yBtZemo4KdP2Xr_vtvD5KfKC6pdspIVIxRgxenSDCpo
+
+{
+  "title": "My New Note 1234!!!",
+  "content": "This is the content of my new note 1234!!!.",
+  "tags": ["personal","todo"],
+  "isPinned": false, 
+  "userId": "667d791cd788728b158a7dd0"
+}
+
+### Create a new note (protected route)
+POST http://localhost:3030/mongo/add-note
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDA3MTcsImV4cCI6MTc0NTU0NDMxN30.yBtZemo4KdP2Xr_vtvD5KfKC6pdspIVIxRgxenSDCpo
+
+{
+  "title": "New note added by login user 3",
+  "content": "This note was added via a protected route.",
+  "tags": ["personal", "important"]
+}
+
+### Register a new user
+POST http://localhost:3030/mongo/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "John Doe",
+  "email": "johndoe@example.com",
+  "password": "securePassword123"
+}
+
+### Login with the registered user
+POST http://localhost:3030/mongo/auth/login
+Content-Type: application/json
+
+{
+  "email": "johndoe@example.com",
+  "password": "securePassword123"
+}
+
+### Verify the token (replace <TOKEN> with the token from the login response)
+GET http://localhost:3030/mongo/auth/verify
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDA3MTcsImV4cCI6MTc0NTU0NDMxN30.yBtZemo4KdP2Xr_vtvD5KfKC6pdspIVIxRgxenSDCpo

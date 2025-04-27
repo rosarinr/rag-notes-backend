@@ -111,11 +111,11 @@ router.post("/auth/cookie/login", async (req, res) => {
     });
 
     // Set token in HttpOnly cookie
-    res.cookie('accessToken', token, {
+    res.cookie("accessToken", token, {
       httpOnly: true,
       secure: false,
-      sameSite: 'Strict', // helps prevent CSRF
-      path:"/",
+      sameSite: "Strict", // helps prevent CSRF
+      path: "/",
       maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
     });
 
@@ -124,7 +124,6 @@ router.post("/auth/cookie/login", async (req, res) => {
       message: "Login successful",
       user: { id: user._id, name: user.name, email: user.email }, // send some safe public info if needed
     });
-
   } catch (err) {
     res
       .status(500)
@@ -134,7 +133,7 @@ router.post("/auth/cookie/login", async (req, res) => {
 
 // GET Current User Profile (protected route)
 router.get("/auth/profile", authUser, async (req, res) => {
-  const user = await User.findById(req.user._id).select("-password"); // exclude password
+  const user = await User.findById(req.user.user._id).select("-password"); // exclude password
 
   if (!user) {
     return res.status(404).json({ error: true, message: "User not found" });
@@ -145,10 +144,10 @@ router.get("/auth/profile", authUser, async (req, res) => {
 
 // LOGOUT
 router.post("/auth/logout", (req, res) => {
-  res.clearCookie('accessToken', {
+  res.clearCookie("accessToken", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Strict',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
   });
   res.status(200).json({ message: "Logged out successfully" });
 });
@@ -236,6 +235,13 @@ router.get("/get-user", async (req, res) => {
     user: isUser,
     message: "",
   });
+});
+
+router.get("/auth/me", (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  res.json({ user: req.user });
 });
 
 export default router;

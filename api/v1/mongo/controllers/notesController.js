@@ -69,18 +69,22 @@ export const createNote = async (req, res) => {
 export const addNote = async (req, res) => {
   const { title, content, tags = [], isPinned = false } = req.body;
 
-  const userId = req.user._id; // Logged-in user's MongoDB _id
+  const userId = req.user.user._id; // Logged-in user's MongoDB _id
 
   if (!title) {
     return res.status(400).json({ error: true, message: "Title is required" });
   }
 
   if (!content) {
-    return res.status(400).json({ error: true, message: "Content is required" });
+    return res
+      .status(400)
+      .json({ error: true, message: "Content is required" });
   }
 
   if (!userId) {
-    return res.status(401).json({ error: true, message: "Unauthorized - no user ID found" });
+    return res
+      .status(401)
+      .json({ error: true, message: "Unauthorized - no user ID found" });
   }
 
   try {

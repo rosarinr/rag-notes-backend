@@ -1,7 +1,10 @@
 import jwt from "jsonwebtoken";
 
 export const authUser = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  console.log("---------- NEW REQUEST ----------");
+  console.log("Cookies received:", req.cookies);
+  console.log("Access Token cookie:", req.cookies?.accessToken);
+  const token = req.cookies?.accessToken;
   if (!token) {
     return res.json({ success: false, message: "Access denied. No token." });
   }

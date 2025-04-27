@@ -67,26 +67,20 @@ export const createNote = async (req, res) => {
 
 // handler used in protected route
 export const addNote = async (req, res) => {
-  const {
-    title,
-    content,
-    tags = [], // default empty array
-    isPinned = false,
-  } = req.body;
+  const { title, content, tags = [], isPinned = false } = req.body;
 
-  const { user } = req.user;
+  const userId = req.user._id; // Logged-in user's MongoDB _id
+
   if (!title) {
     return res.status(400).json({ error: true, message: "Title is required" });
   }
 
   if (!content) {
-    return res
-      .status(400)
-      .json({ error: true, message: "Content is required" });
+    return res.status(400).json({ error: true, message: "Content is required" });
   }
 
-  if (!user || !user._id) {
-    return res.status(400).json({ error: true, message: "Invalid user." });
+  if (!userId) {
+    return res.status(401).json({ error: true, message: "Unauthorized - no user ID found" });
   }
 
   try {
@@ -95,18 +89,16 @@ export const addNote = async (req, res) => {
       content,
       tags,
       isPinned,
-      userId: user._id,
+      userId, // 🔥 Save user as ObjectId reference
     });
 
-    await note.save();
-
-    return res.json({
+    return res.status(201).json({
       error: false,
       note,
       message: "Note added successfully",
     });
   } catch (error) {
-    console.error("Error in /add-note:", error);
+    console.error("Error creating note:", error);
     return res.status(500).json({
       error: true,
       message: "Internal Server Error",

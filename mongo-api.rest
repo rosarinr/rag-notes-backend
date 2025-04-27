@@ -1,22 +1,21 @@
-### Get all users
+### Admin User Route - Get all users
 GET http://localhost:3030/mongo/users
 
-### Get all notes
+### Admin User - Get all notes
 GET http://localhost:3030/mongo/notes
 
-### Create a new user (basic)
+### Admin User - Create a new user
 POST http://localhost:3030/mongo/users
 Content-Type: application/json
 
 {
-  "name": "Betty",
+  "fullName": "Betty",
   "email": "betty@example.com"
 }
 
-### Create a new note (basic)
+### Admin route - Create a new note (basic)
 POST http://localhost:3030/mongo/notes
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDA3MTcsImV4cCI6MTc0NTU0NDMxN30.yBtZemo4KdP2Xr_vtvD5KfKC6pdspIVIxRgxenSDCpo
 
 {
   "title": "My New Note 1234!!!",
@@ -26,7 +25,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZ
   "userId": "667d791cd788728b158a7dd0"
 }
 
-### Create a new note (protected route)
+### User route - Create a new note (protected route)
 POST http://localhost:3030/mongo/add-note
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDA3MTcsImV4cCI6MTc0NTU0NDMxN30.yBtZemo4KdP2Xr_vtvD5KfKC6pdspIVIxRgxenSDCpo
@@ -37,7 +36,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZ
   "tags": ["personal", "important"]
 }
 
-### Register a new user
+### User route - Register a new user
 POST http://localhost:3030/mongo/auth/register
 Content-Type: application/json
 
@@ -47,7 +46,7 @@ Content-Type: application/json
   "password": "securePassword123"
 }
 
-### Login with the registered user
+### User route - Login with the registered user
 POST http://localhost:3030/mongo/auth/login
 Content-Type: application/json
 
@@ -56,6 +55,15 @@ Content-Type: application/json
   "password": "securePassword123"
 }
 
-### Verify the token (replace <TOKEN> with the token from the login response)
+### User route - Login with the registered user
+POST http://localhost:3030/mongo/auth/cookie/login
+Content-Type: application/json
+
+{
+  "email": "johndoe@example.com",
+  "password": "securePassword123"
+}
+
+### Test route - Verify the token (replace <TOKEN> with the token from the login response)
 GET http://localhost:3030/mongo/auth/verify
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDA3MTcsImV4cCI6MTc0NTU0NDMxN30.yBtZemo4KdP2Xr_vtvD5KfKC6pdspIVIxRgxenSDCpo

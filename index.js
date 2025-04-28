@@ -16,7 +16,7 @@ const app = express();
 // Global middlewares
 app.use(helmet());
 const corsOptions = {
-  origin: "http://localhost:5173", // your frontend domain
+  origin: ["http://localhost:5173", "https://rag-notes-frontend.vercel.app"], // your frontend domain
   credentials: true, // ✅ allow cookies to be sent
 };
 

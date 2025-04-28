@@ -237,6 +237,7 @@ export const searchUserNotes = async (req, res) => {
       $or: [
         { title: { $regex: new RegExp(query, "i") } }, // Case-insensitive title match
         { content: { $regex: new RegExp(query, "i") } }, // Case-insensitive content match
+        { tags: { $regex: new RegExp(query, "i") } },
       ],
     });
 
@@ -246,6 +247,32 @@ export const searchUserNotes = async (req, res) => {
       message: "Notes matching the search query retrieved successfully",
     });
   } catch (error) {
+    return res.status(500).json({
+      error: true,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const getNoteById = async (req, res) => {
+  const noteId = req.params.noteId;
+  const { user } = req.user;
+
+  try {
+    // Find the note by ID and ensure it belongs to the logged-in user
+    const note = await Note.findOne({ _id: noteId, userId: user._id });
+
+    if (!note) {
+      return res.status(404).json({ error: true, message: "Note not found" });
+    }
+
+    return res.json({
+      error: false,
+      note,
+      message: "Note retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching note:", error);
     return res.status(500).json({
       error: true,
       message: "Internal Server Error",

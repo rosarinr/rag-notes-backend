@@ -122,7 +122,12 @@ router.post("/auth/cookie/login", async (req, res) => {
     res.status(200).json({
       error: false,
       message: "Login successful",
-      user: { id: user._id, name: user.name, email: user.email }, // send some safe public info if needed
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        fullName: user.fullName,
+      }, // send some safe public info if needed
     });
   } catch (err) {
     res
@@ -134,7 +139,7 @@ router.post("/auth/cookie/login", async (req, res) => {
 // GET Current User Profile (protected route)
 router.get("/auth/profile", authUser, async (req, res) => {
   const user = await User.findById(req.user.user._id).select("-password"); // exclude password
-
+  console.log(user);
   if (!user) {
     return res.status(404).json({ error: true, message: "User not found" });
   }

@@ -110,13 +110,22 @@ router.post("/auth/cookie/login", async (req, res) => {
       expiresIn: "1h", // 1 hour expiration
     });
 
+    const isProd = process.env.NODE_ENV === "production";
+
     // Set token in HttpOnly cookie
+    // res.cookie("accessToken", token, {
+    //   httpOnly: true,
+    //   secure: false,
+    //   sameSite: "Strict", // helps prevent CSRF
+    //   path: "/",
+    //   maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
+    // });
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "Strict", // helps prevent CSRF
+      secure: isProd, // only send over HTTPS in prod
+      sameSite: isProd ? "none" : "lax",
       path: "/",
-      maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
+      maxAge: 60 * 60 * 1000, // 1 hour
     });
 
     res.status(200).json({

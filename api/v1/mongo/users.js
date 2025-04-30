@@ -123,7 +123,7 @@ router.post("/auth/cookie/login", async (req, res) => {
       error: false,
       message: "Login successful",
       user: {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         fullName: user.fullName,

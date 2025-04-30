@@ -13,6 +13,8 @@ dotenv.config();
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 // Global middlewares
 app.use(helmet());
 const corsOptions = {
@@ -80,11 +82,16 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 
 (async () => {
-  await connectMongo();
-  await connectTurso();
-  app.listen(PORT, () =>
-    console.log(`Server running on http://localhost:${PORT} ✅`)
-  );
+  try {
+    await connectMongo();
+    await connectTurso();
+    app.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT} ✅`);
+    });
+  } catch (err) {
+    console.error("❌ Startup error:", err);
+    process.exit(1);
+  }
 })();
 
 // Handle unhandled promise rejections globally

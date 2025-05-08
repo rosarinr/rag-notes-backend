@@ -7,6 +7,7 @@ const NoteSchema = new Schema({
   isPinned: { type: Boolean, default: false },
   isPublic: { type: Boolean, default: false },
   userId: { type: String, required: true },
+  embedding: { type: [Number], required: false },
   createdOn: { type: Date, default: new Date().getTime() },
 });
 

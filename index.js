@@ -18,7 +18,11 @@ app.set("trust proxy", 1);
 // Global middlewares
 app.use(helmet());
 const corsOptions = {
-  origin: ["http://localhost:5173", "https://rag-notes-frontend.vercel.app"], // your frontend domain
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5175",
+    "https://rag-notes-frontend.vercel.app",
+  ], // your frontend domain
   credentials: true, // ✅ allow cookies to be sent
 };
 
@@ -28,7 +32,7 @@ app.use(express.json());
 app.use(cookieParser());
 // Centralized routes
 app.use("/", apiRoutes(db));
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
   res.send(`
       <!DOCTYPE html>
       <html lang="en">

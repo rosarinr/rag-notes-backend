@@ -1,4 +1,6 @@
 import express from "express";
+import { OpenAI } from "openai";
+import dotenv from "dotenv";
 import { Note } from "../../../models/Note.js";
 import {
   getAllNotes,
@@ -14,6 +16,13 @@ import {
 import { authUser } from "../../../middleware/auth.js";
 import { User } from "../../../models/User.js";
 import mongoose from "mongoose";
+import { generateEmbedding } from "../../../utils/generateEmbedding.js";
+
+dotenv.config();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY, // Add your OpenAI API key to the .env file
+});
 
 const router = express.Router();
 
@@ -25,7 +34,8 @@ router.post("/notes", createNote);
 
 // ❌ Use these routes after implimenting auth
 // Add Note
-router.post("/add-note", authUser, addNote);
+// router.post("/add-note", authUser, addNote);
+router.post("/add-note", authUser, createNote);
 
 // Edit Note
 router.put("/edit-note/:noteId", authUser, editNote);
@@ -106,4 +116,121 @@ router.put("/notes/:noteId/visibility", authUser, async (req, res) => {
     res.status(500).json({ error: true, message: "Server error" });
   }
 });
+
+// Search notes using vector embeddings
+router.post("/search-notes", authUser, async (req, res) => {
+  const { query } = req.body;
+  const userId = req.user.user._id;
+
+  if (!query) {
+    return res.status(400).json({ error: true, message: "Query is required" });
+  }
+
+  try {
+    // Generate embedding for the query
+    const queryEmbedding = await generateEmbedding(query);
+
+    // Perform vector search in MongoDB
+    const results = await Note.aggregate([
+      {
+        $vectorSearch: {
+          index: "vector_index", // Ensure this matches your Lucene vector index name
+          queryVector: queryEmbedding, // The embedding vector for the query
+          path: "embedding", // Path to the embedding field in the schema
+          k: 5, // Number of nearest neighbors to retrieve
+          numCandidates: 100,
+          limit: 5,
+          filter: {
+            userId: userId, // Filter notes by the logged-in user's ID
+          },
+        },
+      },
+    ]);
+
+    if (!results || results.length === 0) {
+      return res
+        .status(404)
+        .json({ error: true, message: "No matching notes found" });
+    }
+
+    res.status(200).json({ error: false, results });
+  } catch (err) {
+    console.error("Error performing vector search:", err);
+    res.status(500).json({
+      error: true,
+      message: "Failed to perform search",
+      details: err.message,
+    });
+  }
+});
+
+// Answer a question based on a user's notes
+router.post("/answer-question/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { question } = req.body;
+
+  if (
+    !question ||
+    typeof question !== "string" ||
+    question.trim().length === 0
+  ) {
+    return res.status(400).json({
+      error: true,
+      message: "Question is required and must be a non-empty string",
+    });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ error: true, message: "Invalid user ID" });
+  }
+
+  try {
+    // Retrieve the user's public notes
+    const notes = await Note.find({ userId, isPublic: true }).select(
+      "title content"
+    );
+
+    if (!notes || notes.length === 0) {
+      return res
+        .status(404)
+        .json({ error: true, message: "No public notes found for this user" });
+    }
+
+    // Combine the notes into a single context
+    const context = notes
+      .map((note) => `Title: ${note.title}\nContent: ${note.content}`)
+      .join("\n\n");
+
+    // Generate an AI response using OpenAI
+    const prompt = `
+      You are an AI assistant. Answer the following question based on the provided notes:
+      Notes:
+      ${context}
+      Question: ${question}
+      Answer:
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // Use the GPT-4 model
+      messages: [
+        { role: "system", content: "You are an AI assistant." },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 300,
+      temperature: 0.7,
+    });
+
+    const answer = response.choices[0].message.content.trim();
+
+    res.status(200).json({ error: false, answer });
+  } catch (err) {
+    console.error("Error answering question:", err);
+    res.status(500).json({
+      error: true,
+      message: "Failed to answer question",
+      details: err.message,
+    });
+  }
+});
+
 export default router;

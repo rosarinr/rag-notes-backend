@@ -57,7 +57,7 @@ Content-Type: application/json
 
 ### User route - Get User Profile
 GET http://localhost:3030/mongo/auth/profile
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBjZmMyMDg0YzZhMzkyOTVlMDUzZDAiLCJpYXQiOjE3NDU3MjU2NTcsImV4cCI6MTc0NTcyOTI1N30.RfHB9JLkV5VMniB-eu30KuFz5sBlrrqIDgXPxKTZOIk
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODExOGNmZjFjZTFkODQ3YWRkMzMwNTciLCJpYXQiOjE3NDY1MjMxOTgsImV4cCI6MTc0NjUyNjc5OH0.dGWaUmeygDAhREBFNuI_tftVzWwmOtwzV6Msbo1cXB8
 
 
 ### User route - Login with the registered user

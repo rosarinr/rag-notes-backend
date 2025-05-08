@@ -1,4 +1,5 @@
 import { Note } from "../../../../models/Note.js";
+import { generateEmbedding } from "../../../../utils/generateEmbedding.js";
 
 export const getAllNotes = async (_req, res) => {
   try {
@@ -18,52 +19,52 @@ export const getAllNotes = async (_req, res) => {
 };
 
 // handler used in unprotected route
-export const createNote = async (req, res) => {
-  const {
-    title,
-    content,
-    tags = [], // default empty array
-    isPinned = false,
-    userId,
-  } = req.body;
+// export const createNote = async (req, res) => {
+//   const {
+//     title,
+//     content,
+//     tags = [], // default empty array
+//     isPinned = false,
+//     userId,
+//   } = req.body;
 
-  // basic validation
-  if (!title) {
-    return res.status(400).json({ error: true, message: "Title is required" });
-  }
-  if (!content) {
-    return res
-      .status(400)
-      .json({ error: true, message: "Content is required" });
-  }
-  if (!userId) {
-    return res
-      .status(400)
-      .json({ error: true, message: "User ID is required" });
-  }
+//   // basic validation
+//   if (!title) {
+//     return res.status(400).json({ error: true, message: "Title is required" });
+//   }
+//   if (!content) {
+//     return res
+//       .status(400)
+//       .json({ error: true, message: "Content is required" });
+//   }
+//   if (!userId) {
+//     return res
+//       .status(400)
+//       .json({ error: true, message: "User ID is required" });
+//   }
 
-  try {
-    const note = await Note.create({
-      title,
-      content,
-      tags,
-      isPinned,
-      userId,
-    });
+//   try {
+//     const note = await Note.create({
+//       title,
+//       content,
+//       tags,
+//       isPinned,
+//       userId,
+//     });
 
-    return res.status(201).json({
-      error: false,
-      note,
-      message: "Note created successfully",
-    });
-  } catch (err) {
-    return res.status(500).json({
-      error: true,
-      message: "Failed to create note",
-      details: err.message,
-    });
-  }
-};
+//     return res.status(201).json({
+//       error: false,
+//       note,
+//       message: "Note created successfully",
+//     });
+//   } catch (err) {
+//     return res.status(500).json({
+//       error: true,
+//       message: "Failed to create note",
+//       details: err.message,
+//     });
+//   }
+// };
 
 // handler used in protected route
 export const addNote = async (req, res) => {
@@ -277,5 +278,46 @@ export const getNoteById = async (req, res) => {
       error: true,
       message: "Internal Server Error",
     });
+  }
+};
+
+export const createNote = async (req, res) => {
+  const {
+    title,
+    content,
+    tags = [],
+    isPinned = false,
+    isPublic = false,
+  } = req.body;
+
+  const userId = req.user.user._id; // Logged-in user's MongoDB _id
+
+  if (!title || !content || !userId) {
+    return res.status(400).json({
+      error: true,
+      message: "Title, content, and userId are required",
+    });
+  }
+
+  try {
+    // Generate embedding for the note content
+    const embedding = await generateEmbedding(content);
+
+    const note = await Note.create({
+      title,
+      content,
+      tags,
+      isPinned,
+      isPublic,
+      userId,
+      embedding, // Store the embedding
+    });
+
+    res
+      .status(201)
+      .json({ error: false, note, message: "Note created successfully" });
+  } catch (err) {
+    console.error("Error creating note:", err);
+    res.status(500).json({ error: true, message: "Failed to create note" });
   }
 };

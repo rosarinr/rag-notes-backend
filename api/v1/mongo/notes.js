@@ -165,72 +165,134 @@ router.post("/search-notes", authUser, async (req, res) => {
 });
 
 // Answer a question based on a user's notes
+// router.post("/answer-question/:userId", async (req, res) => {
+//   const { userId } = req.params;
+//   const { question } = req.body;
+
+//   if (
+//     !question ||
+//     typeof question !== "string" ||
+//     question.trim().length === 0
+//   ) {
+//     return res.status(400).json({
+//       error: true,
+//       message: "Question is required and must be a non-empty string",
+//     });
+//   }
+
+//   if (!mongoose.Types.ObjectId.isValid(userId)) {
+//     return res.status(400).json({ error: true, message: "Invalid user ID" });
+//   }
+
+//   try {
+//     // Retrieve the user's public notes
+//     const notes = await Note.find({ userId, isPublic: true }).select(
+//       "title content"
+//     );
+
+//     if (!notes || notes.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ error: true, message: "No public notes found for this user" });
+//     }
+
+//     // Combine the notes into a single context
+//     const context = notes
+//       .map((note) => `Title: ${note.title}\nContent: ${note.content}`)
+//       .join("\n\n");
+
+//     // Generate an AI response using OpenAI
+//     const prompt = `
+//       You are an AI assistant. Answer the following question based on the provided notes:
+//       Notes:
+//       ${context}
+//       Question: ${question}
+//       Answer:
+//     `;
+
+//     const response = await openai.chat.completions.create({
+//       model: "gpt-4o-mini",
+//       messages: [
+//         { role: "system", content: "You are an AI assistant." },
+//         { role: "user", content: prompt },
+//       ],
+//       max_tokens: 300,
+//       temperature: 0.7,
+//     });
+
+//     const answer = response.choices[0].message.content.trim();
+
+//     res.status(200).json({ error: false, answer });
+//   } catch (err) {
+//     console.error("Error answering question:", err);
+//     res.status(500).json({
+//       error: true,
+//       message: "Failed to answer question",
+//       details: err.message,
+//     });
+//   }
+// });
+
+// Answer a question based on a user's notes, using vector search
 router.post("/answer-question/:userId", async (req, res) => {
   const { userId } = req.params;
   const { question } = req.body;
 
-  if (
-    !question ||
-    typeof question !== "string" ||
-    question.trim().length === 0
-  ) {
-    return res.status(400).json({
-      error: true,
-      message: "Question is required and must be a non-empty string",
-    });
+  // … validation omitted for brevity …
+
+  // 1️⃣ Generate an embedding for the question
+  const questionEmbedding = await generateEmbedding(question);
+
+  // 2️⃣ Run vector-search against your notes collection
+  const topNotes = await Note.aggregate([
+    {
+      $vectorSearch: {
+        index: "vector_index", // your vector index name
+        queryVector: questionEmbedding,
+        path: "embedding", // where embeddings are stored
+        k: 5, // top 5 similar notes
+        numCandidates: 100,
+        limit: 5,
+        filter: { userId, isPublic: true },
+      },
+    },
+  ]);
+
+  if (!topNotes.length) {
+    return res
+      .status(404)
+      .json({ error: true, message: "No relevant notes found" });
   }
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(400).json({ error: true, message: "Invalid user ID" });
-  }
+  // 3️⃣ Build context from only those top hits
+  const context = topNotes
+    .map((n) => `Title: ${n.title}\nContent: ${n.content}`)
+    .join("\n\n");
 
-  try {
-    // Retrieve the user's public notes
-    const notes = await Note.find({ userId, isPublic: true }).select(
-      "title content"
-    );
+  // 4️⃣ Ask OpenAI using just that filtered context
+  const prompt = `
+You are an AI assistant. Based on the notes below, answer the question.
+Notes:
+${context}
 
-    if (!notes || notes.length === 0) {
-      return res
-        .status(404)
-        .json({ error: true, message: "No public notes found for this user" });
-    }
+Question: ${question}
+Answer:
+`;
 
-    // Combine the notes into a single context
-    const context = notes
-      .map((note) => `Title: ${note.title}\nContent: ${note.content}`)
-      .join("\n\n");
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: "You are an AI assistant." },
+      { role: "user", content: prompt },
+    ],
+    max_tokens: 300,
+    temperature: 0.7,
+  });
 
-    // Generate an AI response using OpenAI
-    const prompt = `
-      You are an AI assistant. Answer the following question based on the provided notes:
-      Notes:
-      ${context}
-      Question: ${question}
-      Answer:
-    `;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Use the GPT-4 model
-      messages: [
-        { role: "system", content: "You are an AI assistant." },
-        { role: "user", content: prompt },
-      ],
-      max_tokens: 300,
-      temperature: 0.7,
-    });
-
-    const answer = response.choices[0].message.content.trim();
-
-    res.status(200).json({ error: false, answer });
-  } catch (err) {
-    console.error("Error answering question:", err);
-    res.status(500).json({
-      error: true,
-      message: "Failed to answer question",
-      details: err.message,
-    });
-  }
+  res.json({
+    error: false,
+    answer: response.choices[0].message.content.trim(),
+  });
 });
 
 export default router;

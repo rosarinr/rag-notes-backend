@@ -1,7 +1,7 @@
-# Use the official Node.js image as the base image
-FROM node:20
+# Use the official Node.js image as the base image (layer 1)
+FROM node:20 
 
-# Set the working directory inside the container
+# Set the working directory inside the container (layer 2)
 WORKDIR /app
 
 # Copy package.json and package-lock.json to the working directory

@@ -180,19 +180,43 @@ export const togglePin = async (req, res) => {
 
 export const getUserNotes = async (req, res) => {
   const { user } = req.user;
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limitRaw = parseInt(req.query.limit, 10) || 10;
+  const limit = Math.min(Math.max(1, limitRaw), 100);
+  const q = (req.query.q || "").toString().trim();
 
   try {
-    const notes = await Note.find({ userId: user._id }).sort({ isPinned: -1 });
+    const filter = { userId: user._id };
+
+    if (q) {
+      const regex = new RegExp(q, "i");
+      filter.$or = [
+        { title: { $regex: regex } },
+        { content: { $regex: regex } },
+        { tags: { $regex: regex } },
+      ];
+    }
+
+    const total = await Note.countDocuments(filter);
+    const notes = await Note.find(filter)
+      .sort({ isPinned: -1, createdOn: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     return res.json({
       error: false,
       notes,
-      message: "All notes retrieved successfully",
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+      message: "Notes retrieved successfully",
     });
   } catch (error) {
     return res.status(500).json({
       error: true,
       message: "Internal Server Error",
+      details: error.message,
     });
   }
 };

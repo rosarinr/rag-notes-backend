@@ -19,8 +19,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZ
 
 ### 3. Add a new note (protected route)
 POST http://localhost:3030/mongo/add-note
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NTY0NDQzODksImV4cCI6MTc1NjQ0Nzk4OX0.Z3F00_AXuVz-0V67fXMRp4uXJ0bg2Ro7zSTeGklc_WE
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDQzNDcsImV4cCI6MTc0NTU0Nzk0N30.Xhe1tUZdosvQPiAxYPzcej5rJ0oiTSzAX2O_LqcLy-M
 
 {
   "title": "Imagine Dragon",

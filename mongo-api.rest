@@ -46,21 +46,12 @@ Content-Type: application/json
   "password": "securePassword123"
 }
 
-### User route - Login with the registered user
-POST http://localhost:3030/mongo/auth/login
-Content-Type: application/json
-
-{
-  "email": "soy.su@example.com",
-  "password": "soySu123"
-}
-
 ### User route - Get User Profile
 GET http://localhost:3030/mongo/auth/profile
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODExOGNmZjFjZTFkODQ3YWRkMzMwNTciLCJpYXQiOjE3NDY1MjMxOTgsImV4cCI6MTc0NjUyNjc5OH0.dGWaUmeygDAhREBFNuI_tftVzWwmOtwzV6Msbo1cXB8
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NTY0MzQxNDAsImV4cCI6MTc1NjQzNzc0MH0.IGsGwGOM3vbCZELSBH11jdru2ePRhatkOL2riRXZUt0
 
 
-### User route - Login with the registered user
+### User route - Login
 POST http://localhost:3030/mongo/auth/cookie/login
 Content-Type: application/json
 
@@ -72,3 +63,14 @@ Content-Type: application/json
 ### Test route - Verify the token (replace <TOKEN> with the token from the login response)
 GET http://localhost:3030/mongo/auth/verify
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODBhZDM2NGQxM2NmODM3NjcxMmIwYjkiLCJpYXQiOjE3NDU1NDA3MTcsImV4cCI6MTc0NTU0NDMxN30.yBtZemo4KdP2Xr_vtvD5KfKC6pdspIVIxRgxenSDCpo
+
+### User route - Logout user
+POST http://localhost:3030/mongo/auth/logout
+
+### User notes (paginated) - page 1
+GET http://localhost:3030/mongo/get-all-notes?page=1&limit=10
+Cookie: accessToken=YOUR_JWT_TOKEN
+
+### User notes (paginated + search)
+GET http://localhost:3030/mongo/get-all-notes?page=2&limit=5&q=vector
+Cookie: accessToken=YOUR_JWT_TOKEN

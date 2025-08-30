@@ -74,21 +74,33 @@ router.get("/public-profile/:userId", async (req, res) => {
 // Get public notes for a user
 router.get("/public-notes/:userId", async (req, res) => {
   const { userId } = req.params;
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limitRaw = parseInt(req.query.limit, 10) || 10;
+  const limit = Math.min(Math.max(1, limitRaw), 100);
 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     return res.status(400).json({ error: true, message: "Invalid user ID" });
   }
 
   try {
-    const notes = await Note.find({
-      userId,
-      isPublic: true, // Only fetch public notes
-    }).sort({ createdOn: -1 }); // Sort by creation date (newest first)
+    const filter = { userId, isPublic: true };
+    const total = await Note.countDocuments(filter);
+    const notes = await Note.find(filter)
+      .sort({ createdOn: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
-    res.status(200).json({ error: false, notes });
+    res.status(200).json({
+      error: false,
+      notes,
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: true, message: "Server error" });
+    res.status(500).json({ error: true, message: "Server error", details: err.message });
   }
 });
 

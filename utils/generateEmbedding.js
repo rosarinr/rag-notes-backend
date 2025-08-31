@@ -13,7 +13,7 @@ export const generateEmbedding = async (text) => {
       model: "text-embedding-ada-002",
       input: text,
     });
-    console.log("OpenAI Embedding Response:", response.data);
+    // console.log("OpenAI Embedding Response:", response.data);
     return response.data[0].embedding; // Return the embedding vector
   } catch (error) {
     console.error("Error generating embedding:", error);

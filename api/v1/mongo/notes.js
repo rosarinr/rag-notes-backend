@@ -20,9 +20,9 @@ import { generateEmbedding } from "../../../utils/generateEmbedding.js";
 
 dotenv.config();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Add your OpenAI API key to the .env file
-});
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY, // Add your OpenAI API key to the .env file
+// });
 
 const router = express.Router();
 

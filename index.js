@@ -4,36 +4,30 @@ import helmet from "helmet";
 import cors from "cors";
 import apiRoutes from "./api/v1/routes.js";
 import { connectMongo } from "./config/mongo.js";
-//import { connectTurso, db } from "./config/turso.js";
+// import { connectTurso, db } from "./config/turso.js";
 import limiter from "./middleware/rateLimiter.js";
 import errorHandler from "./middleware/errorHandler.js";
 import cookieParser from "cookie-parser";
-
 dotenv.config();
-
 const app = express();
-
-//app.set("trust proxy", 1);
-
+app.set("trust proxy", 1);
 // Global middlewares
 app.use(helmet());
-
 const corsOptions = {
   origin: [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
-    "https://rag-notes-frontend-two.vercel.app",
+    "https://rag-notes-frontend-two.vercel.app"
   ], // frontend domain
-  credentials: true, // ✅ allow cookies to be sent
+  credentials: true, // :white_check_mark: allow cookies to be sent
 };
-
 app.use(cors(corsOptions));
 app.use(limiter);
 app.use(express.json());
 app.use(cookieParser());
 // Centralized routes
-app.use("/", apiRoutes);
+app.use("/", apiRoutes());
 app.get("/", (_req, res) => {
   res.send(`
       <!DOCTYPE html>
@@ -45,14 +39,14 @@ app.get("/", (_req, res) => {
         <style>
           body {
             font-family: 'Segoe UI', sans-serif;
-            background: #f7f9fc;
+            background: #F7F9FC;
             color: #333;
             text-align: center;
             padding: 50px;
           }
           h1 {
             font-size: 2.5rem;
-            color: #2c3e50;
+            color: #2C3E50;
           }
           p {
             font-size: 1.2rem;
@@ -72,11 +66,11 @@ app.get("/", (_req, res) => {
       </head>
       <body>
         <div class="container">
-          <h1>📒 Welcome to the Notes API</h1>
+          <h1>:ledger: Welcome to the Notes API</h1>
           <p>This is a simple REST API built with <strong>Express</strong> and <strong>LibSQL</strong>.</p>
           <p>Try creating a note via <code>POST /notes</code> or explore routes like <code>/users</code> and <code>/notes-with-authors</code>.</p>
           <p>Use a REST client like <em>VSCode REST Client</em> or <em>Postman</em> to interact.</p>
-          <p>✨ Happy coding!</p>
+          <p>:sparkles: Happy coding!</p>
         </div>
       </body>
       </html>
@@ -84,24 +78,21 @@ app.get("/", (_req, res) => {
 });
 // Centralized error handling
 app.use(errorHandler);
-
 const PORT = process.env.PORT || 3000;
-
 (async () => {
   try {
     await connectMongo();
-    //await connectTurso();
+    // await connectTurso();
     app.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT} ✅`);
+      console.log(`Server listening on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ Startup error:", err);
+    console.error(":x: Startup error:", err);
     process.exit(1);
   }
 })();
-
 // Handle unhandled promise rejections globally
 process.on("unhandledRejection", (err) => {
-  console.error("💥 Unhandled Rejection:", err.message);
+  console.error(":boom: Unhandled Rejection:", err.message);
   process.exit(1);
 });
